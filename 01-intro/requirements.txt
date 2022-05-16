@@ -1,0 +1,7 @@
+pandas
+sklearn
+seaborn
+black
+ipykernel
+pyarrow
+fastparquet
