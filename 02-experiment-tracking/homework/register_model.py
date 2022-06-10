@@ -10,19 +10,20 @@ from mlflow.tracking import MlflowClient
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 
-HPO_EXPERIMENT_NAME = "random-forest-hyperopt"
+HPO_EXPERIMENT_NAME = "random-forest-hyperopt-model-artifacts"
 EXPERIMENT_NAME = "random-forest-best-models"
 
-mlflow.set_tracking_uri("http://127.0.0.1:5000")
+# mlflow.set_tracking_uri("http://127.0.0.1:5000")
+mlflow.set_tracking_uri("sqlite:///mlflow.db")
 mlflow.set_experiment(EXPERIMENT_NAME)
 mlflow.sklearn.autolog()
 
 SPACE = {
-    'max_depth': scope.int(hp.quniform('max_depth', 1, 20, 1)),
-    'n_estimators': scope.int(hp.quniform('n_estimators', 10, 50, 1)),
-    'min_samples_split': scope.int(hp.quniform('min_samples_split', 2, 10, 1)),
-    'min_samples_leaf': scope.int(hp.quniform('min_samples_leaf', 1, 4, 1)),
-    'random_state': 42
+    "max_depth": scope.int(hp.quniform("max_depth", 1, 20, 1)),
+    "n_estimators": scope.int(hp.quniform("n_estimators", 10, 50, 1)),
+    "min_samples_split": scope.int(hp.quniform("min_samples_split", 2, 10, 1)),
+    "min_samples_leaf": scope.int(hp.quniform("min_samples_leaf", 1, 4, 1)),
+    "random_state": 42,
 }
 
 
@@ -50,7 +51,8 @@ def train_and_log_model(data_path, params):
 
 def run(data_path, log_top):
 
-    client = MlflowClient()
+    MLFLOW_TRACKING_URI = "sqlite:///mlflow.db"
+    client = MlflowClient(tracking_uri=MLFLOW_TRACKING_URI)
 
     # retrieve the top_n model runs and log the models to MLflow
     experiment = client.get_experiment_by_name(HPO_EXPERIMENT_NAME)
@@ -58,7 +60,7 @@ def run(data_path, log_top):
         experiment_ids=experiment.experiment_id,
         run_view_type=ViewType.ACTIVE_ONLY,
         max_results=log_top,
-        order_by=["metrics.rmse ASC"]
+        order_by=["metrics.rmse ASC"],
     )
     for run in runs:
         train_and_log_model(data_path=data_path, params=run.data.params)
@@ -67,23 +69,39 @@ def run(data_path, log_top):
     experiment = client.get_experiment_by_name(EXPERIMENT_NAME)
     # best_run = client.search_runs( ...  )[0]
 
+    EXPERIMENT_ID = "5"
+
+    runs = client.search_runs(
+        experiment_ids=experiment.experiment_id,
+        filter_string="metrics.rmse < 7",
+        run_view_type=ViewType.ACTIVE_ONLY,
+        max_results=3,
+        order_by=["metrics.rmse ASC"],
+    )
+    best_run = runs[0]
+    best_model_uri = f"runs:/{best_run.info.run_id}/models"
+    model_name = "taxi_ride_duration_predictor_random_forest"
     # register the best model
     # mlflow.register_model( ... )
+    client.register_model(
+        model_uri=best_model_uri,
+        name=model_name,
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--data_path",
         default="./output",
-        help="the location where the processed NYC taxi trip data was saved."
+        help="the location where the processed NYC taxi trip data was saved.",
     )
     parser.add_argument(
         "--top_n",
         default=5,
         type=int,
-        help="the top 'top_n' models will be evaluated to decide which model to promote."
+        help="the top 'top_n' models will be evaluated to decide which model to promote.",
     )
     args = parser.parse_args()
 

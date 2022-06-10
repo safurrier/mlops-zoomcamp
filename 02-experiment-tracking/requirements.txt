@@ -7,3 +7,14 @@ hyperopt
 xgboost
 fastparquet
 boto3
+mlflow
+jupyter
+scikit-learn
+pandas
+seaborn
+hyperopt
+xgboost
+black
+ipykernel
+pyarrow
+fastparquet
