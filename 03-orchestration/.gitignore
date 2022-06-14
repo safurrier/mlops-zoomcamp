@@ -6,3 +6,6 @@ mlruns/*
 ./DS_Store
 *.db
 *.DS_Store
+hw_3_answers.txt
+artifacts/**
+prefect-storage/**
