@@ -10,9 +10,5 @@ data/
 .venv
 venv
 .idea
-<<<<<<< HEAD
-.DS_Store
-=======
 **/artifacts/
 **/models/
->>>>>>> 11d7635d8fbe290832c858a433e3c93d4e087961
